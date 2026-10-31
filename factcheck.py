@@ -5,6 +5,7 @@ from typing import List
 import numpy as np
 import spacy
 import gc
+import re
 
 
 class FactExample(object):
@@ -82,8 +83,71 @@ class AlwaysEntailedFactChecker(FactChecker):
 
 
 class WordRecallThresholdFactChecker(FactChecker):
+    def __init__(self, threshold=0.75):
+        # At least 75% of the fact words must match.
+        self.threshold = threshold
+
+        # Skip common words. Keep words like "not" and "no".
+        self.stop_words = set(
+            "a an the and or but is are was were be been being am to of in on at "
+            "for from by with as that this these those it its he she his her "
+            "they their them has have had do does did s".split()
+        )
+
+    def get_words(self, text: str) -> set:
+        text = text.lower()
+
+        # Remove tags like <s>.
+        text = re.sub(r"<[^>]+>", " ", text)
+
+        # Find the words and numbers in the text.
+        words = re.findall(r"[a-z0-9]+", text)
+        useful_words = set()
+
+        # Keep useful words. A set counts each word only once.
+        for word in words:
+            if word not in self.stop_words:
+                useful_words.add(word)
+
+        return useful_words
+
+    def get_overlap_score(self, fact: str, passages: List[dict]) -> float:
+        """Return the fraction of fact words found in the passages."""
+        fact_words = self.get_words(fact)
+
+        # No words left? Avoid dividing by zero.
+        if not fact_words:
+            return 0.0
+
+        passage_words = set()
+
+        # Collect the words from all evidence passages.
+        for passage in passages:
+            words = self.get_words(passage["text"])
+            passage_words.update(words)
+
+        # Count how many fact words appear in the evidence.
+        matching_word_count = 0
+
+        for word in fact_words:
+            if word in passage_words:
+                matching_word_count += 1
+
+        fact_word_count = len(fact_words)
+
+        # Example: 3 matching words out of 4 gives 0.75.
+        score = matching_word_count / fact_word_count
+
+        return score
+
     def predict(self, fact: str, passages: List[dict]) -> str:
-        raise Exception("Implement me")
+        score = self.get_overlap_score(fact, passages)
+
+        # Enough matching words means supported.
+        if score >= self.threshold:
+            return "S"
+
+        return "NS"
 
 
 class EntailmentFactChecker(FactChecker):
