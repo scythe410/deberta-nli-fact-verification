@@ -1,0 +1,30 @@
+name: Validate branch flow
+
+on:
+  pull_request_target:
+    branches: [main, dev]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  branch-flow:
+    name: Branch flow
+    runs-on: ubuntu-latest
+    steps:
+      # Validate event metadata only; never check out or execute PR code here.
+      - name: Require dev as the source for main
+        env:
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          if [ "$BASE_BRANCH" = "main" ]; then
+            if [ "$HEAD_BRANCH" != "dev" ] || [ "$HEAD_REPOSITORY" != "$BASE_REPOSITORY" ]; then
+              echo "::error::PRs into main must come from this repository's dev branch. Merge feature work into dev first."
+              exit 1
+            fi
+          fi
+          echo "Branch flow is valid."
