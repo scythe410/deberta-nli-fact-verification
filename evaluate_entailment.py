@@ -69,6 +69,9 @@ def main():
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--refine", action="store_true", help="Compare overlap cutoffs near 0.10.")
     modes.add_argument("--final", action="store_true", help="Export predictions from the final checker.")
+    modes.add_argument(
+        "--compare-stemming", action="store_true", help="Compare the final checker with stemming off and on."
+    )
     args = parser.parse_args()
     overlap_cutoffs = (0.0, 0.1, 0.2, 0.3)
     decision_cutoffs = (None, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
@@ -89,6 +92,14 @@ def main():
     checker = EntailmentFactChecker(entailment_model)
     if args.final:
         export_final_predictions(checker, examples, project / "outputs/entailment_final_predictions.jsonl")
+        return
+
+    if args.compare_stemming:
+        for use_stemming, setting in ((False, "off"), (True, "on")):
+            checker.overlap_checker.use_stemming = use_stemming
+            print(f"\nstemming {setting} (minimum overlap {checker.minimum_overlap:.2f})", flush=True)
+            output = project / "outputs" / f"entailment_stemming_{setting}_predictions.jsonl"
+            export_final_predictions(checker, examples, output)
         return
 
     overlap_checker = WordRecallThresholdFactChecker(use_stemming=False)

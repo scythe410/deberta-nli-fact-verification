@@ -160,7 +160,7 @@ class EntailmentFactChecker(FactChecker):
 
     def __init__(self, ent_model):
         self.ent_model = ent_model
-        self.overlap_checker = WordRecallThresholdFactChecker(use_stemming=False)
+        self.overlap_checker = WordRecallThresholdFactChecker(use_stemming=True)
         self.nlp = spacy.blank("en")
         self.nlp.add_pipe("sentencizer")
 
