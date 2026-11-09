@@ -33,7 +33,10 @@ class WordOverlapLimitTests(unittest.TestCase):
     def test_accented_name_loses_a_letter(self):
         words = self.checker.get_words("José")
 
-        self.assertEqual(words, {"jos"})
+        # ASCII tokenisation produces "jos"; stemming reduces it to "jo".
+        self.assertEqual(words, {"jo"})
+        original = WordRecallThresholdFactChecker(use_stemming=False)
+        self.assertEqual(original.get_words("José"), {"jos"})
 
 
 if __name__ == "__main__":

@@ -8,6 +8,18 @@ class WordOverlapTests(unittest.TestCase):
         # Start each test with a fresh checker.
         self.checker = WordRecallThresholdFactChecker()
 
+    def test_stemming_matches_related_words(self):
+        passages = [{"text": "He designs ornaments."}]
+        self.assertEqual(self.checker.get_overlap_score("A designer", passages), 1.0)
+        original = WordRecallThresholdFactChecker(use_stemming=False)
+        self.assertEqual(original.get_overlap_score("A designer", passages), 0.0)
+
+    def test_stemming_counts_each_stem_once(self):
+        score = self.checker.get_overlap_score(
+            "design designer singer", [{"text": "designs"}]
+        )
+        self.assertEqual(score, 0.5)
+
     def test_cleaning_keeps_numbers_and_negation(self):
         # Remove tags and common words, but keep "not" and the year.
         words = self.checker.get_words("<s>The ACTOR was not born in 1980.</s>")

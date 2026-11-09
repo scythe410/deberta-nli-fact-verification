@@ -6,6 +6,7 @@ import numpy as np
 import spacy
 import gc
 import re
+from nltk.stem import PorterStemmer
 
 
 class FactExample(object):
@@ -83,9 +84,11 @@ class AlwaysEntailedFactChecker(FactChecker):
 
 
 class WordRecallThresholdFactChecker(FactChecker):
-    def __init__(self, threshold=0.75):
+    def __init__(self, threshold=0.75, use_stemming=True):
         # At least 75% of the fact words must match.
         self.threshold = threshold
+        self.use_stemming = use_stemming
+        self.stemmer = PorterStemmer()
 
         # Skip common words. Keep words like "not" and "no".
         self.stop_words = set(
@@ -107,6 +110,8 @@ class WordRecallThresholdFactChecker(FactChecker):
         # Keep useful words. A set counts each word only once.
         for word in words:
             if word not in self.stop_words:
+                if self.use_stemming:
+                    word = self.stemmer.stem(word)
                 useful_words.add(word)
 
         return useful_words
