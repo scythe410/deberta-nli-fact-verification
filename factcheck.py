@@ -151,8 +151,11 @@ class WordRecallThresholdFactChecker(FactChecker):
 
 
 class EntailmentFactChecker(FactChecker):
+    minimum_overlap = 0.15
+
     def __init__(self, ent_model):
         self.ent_model = ent_model
+        self.overlap_checker = WordRecallThresholdFactChecker()
         self.nlp = spacy.blank("en")
         self.nlp.add_pipe("sentencizer")
 
@@ -165,9 +168,15 @@ class EntailmentFactChecker(FactChecker):
                     if premise:
                         yield premise
 
+    def score_evidence(self, fact: str, candidates):
+        for premise in candidates:
+            overlap = self.overlap_checker.get_overlap_score(fact, [{"text": premise}])
+            if overlap >= self.minimum_overlap:
+                label, probability = self.ent_model.check_entailment(premise, fact)
+                yield premise, label, probability
+
     def predict(self, fact: str, passages: List[dict]) -> str:
-        for premise in self.evidence_sentences(passages):
-            label, _ = self.ent_model.check_entailment(premise, fact)
+        for _, label, _ in self.score_evidence(fact, self.evidence_sentences(passages)):
             if label == "entailment":
                 return "S"
         return "NS"
