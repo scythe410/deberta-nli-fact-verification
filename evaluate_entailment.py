@@ -1,4 +1,4 @@
-"""Compare entailment decisions on the supplied development set."""
+"""Compare entailment settings or export the final checker predictions."""
 
 import argparse
 import json
@@ -33,9 +33,42 @@ def predict_from_scores(candidates, cutoff, minimum_overlap):
     return "NS", best_evidence, best_probability, calls
 
 
+def save_predictions(output, rows):
+    output.parent.mkdir(exist_ok=True)
+    with output.open("w", encoding="utf-8") as file:
+        for row in rows:
+            file.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def export_final_predictions(checker, examples, output):
+    rows = []
+    correct = false_positives = false_negatives = 0
+    for example in tqdm(examples, desc="checking claims"):
+        gold = "NS" if example.label == "IR" else example.label
+        prediction = checker.predict(example.fact, example.passages)
+        correct += prediction == gold
+        false_positives += prediction == "S" and gold == "NS"
+        false_negatives += prediction == "NS" and gold == "S"
+        rows.append({
+            "fact": example.fact,
+            "original_label": example.label,
+            "gold_label": gold,
+            "prediction": prediction,
+            "passages": example.passages,
+        })
+
+    save_predictions(output, rows)
+    print(f"accuracy: {correct}/{len(rows)} ({correct / len(rows):.2%})")
+    print(f"false positives: {false_positives}")
+    print(f"false negatives: {false_negatives}")
+    print(f"saved final predictions to {output}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--refine", action="store_true", help="Compare overlap cutoffs near 0.10.")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--refine", action="store_true", help="Compare overlap cutoffs near 0.10.")
+    modes.add_argument("--final", action="store_true", help="Export predictions from the final checker.")
     args = parser.parse_args()
     overlap_cutoffs = (0.0, 0.1, 0.2, 0.3)
     decision_cutoffs = (None, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
@@ -54,6 +87,10 @@ def main():
     model = AutoModelForSequenceClassification.from_pretrained(model_name)
     entailment_model = EntailmentModel(model, tokenizer)
     checker = EntailmentFactChecker(entailment_model)
+    if args.final:
+        export_final_predictions(checker, examples, project / "outputs/entailment_final_predictions.jsonl")
+        return
+
     overlap_checker = WordRecallThresholdFactChecker()
 
     # Score each sentence once so every comparison uses the same model outputs.
@@ -110,10 +147,7 @@ def main():
 
     filename = "entailment_refined_predictions.jsonl" if args.refine else "entailment_baseline_predictions.jsonl"
     output = project / "outputs" / filename
-    output.parent.mkdir(exist_ok=True)
-    with output.open("w", encoding="utf-8") as file:
-        for row in export_rows:
-            file.write(json.dumps(row, ensure_ascii=False) + "\n")
+    save_predictions(output, export_rows)
     print(f"saved predictions with a minimum overlap of {export_rows[0]['minimum_overlap']:.2f} to {output}")
 
 
