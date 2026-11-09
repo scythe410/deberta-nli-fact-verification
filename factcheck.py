@@ -4,7 +4,6 @@ import torch
 from typing import List
 import numpy as np
 import spacy
-import gc
 import re
 
 
@@ -33,10 +32,13 @@ class EntailmentModel(object):
         self.tokenizer = tokenizer
         self.cuda = cuda
 
-    def check_entailment(self, premise: str, hypothesis: str) -> str:
+    def check_entailment(self, premise: str, hypothesis: str) -> tuple[str, float]:
         with torch.no_grad():
             # Tokenize the premise and hypothesis
-            inputs = self.tokenizer(premise, hypothesis, return_tensors='pt', truncation=True, padding=True)
+            inputs = self.tokenizer(
+                premise, hypothesis, return_tensors='pt', truncation=True,
+                max_length=self.model.config.max_position_embeddings, padding=True,
+            )
             if self.cuda:
                 inputs = {key: value.to('cuda') for key, value in inputs.items()}
             # Get the model's prediction
@@ -45,13 +47,13 @@ class EntailmentModel(object):
 
         label_id = logits.argmax(dim=-1).item()
         label = self.model.config.id2label[label_id]
+        entailment_id = self.model.config.label2id["entailment"]
+        entailment_probability = logits.softmax(dim=-1)[0, entailment_id].item()
 
-        # To prevent out-of-memory (OOM) issues during autograding, we explicitly delete
-        # objects inputs, outputs, logits, and any results that are no longer needed after the computation.
+        # Release the tensors and return only the label and a Python number.
         del inputs, outputs, logits
-        gc.collect()
 
-        return label
+        return label, entailment_probability
 
 
 class FactChecker(object):
@@ -154,14 +156,20 @@ class EntailmentFactChecker(FactChecker):
         self.nlp = spacy.blank("en")
         self.nlp.add_pipe("sentencizer")
 
-    def predict(self, fact: str, passages: List[dict]) -> str:
+    def evidence_sentences(self, passages: List[dict]):
         for passage in passages:
             # Keep the boundaries between marked sections of the passage.
             for section in passage["text"].replace("<s>", "").split("</s>"):
                 for sentence in self.nlp(section).sents:
                     premise = sentence.text.strip()
-                    if premise and self.ent_model.check_entailment(premise, fact) == "entailment":
-                        return "S"
+                    if premise:
+                        yield premise
+
+    def predict(self, fact: str, passages: List[dict]) -> str:
+        for premise in self.evidence_sentences(passages):
+            label, _ = self.ent_model.check_entailment(premise, fact)
+            if label == "entailment":
+                return "S"
         return "NS"
 
 
