@@ -59,7 +59,7 @@ def main():
     # Score each sentence once so every comparison uses the same model outputs.
     start = perf_counter()
     scored_examples = []
-    for example in tqdm(examples, desc="Scoring evidence"):
+    for example in tqdm(examples, desc="scoring evidence"):
         candidates = []
         for sentence in checker.evidence_sentences(example.passages):
             overlap = overlap_checker.get_overlap_score(example.fact, [{"text": sentence}])
@@ -70,8 +70,8 @@ def main():
         scored_examples.append((example, candidates))
 
     scored_pairs = sum(len(candidates) for _, candidates in scored_examples)
-    print(f"Scored {scored_pairs} pairs in {perf_counter() - start:.1f}s on CPU.")
-    print("Cutoff   Min overlap   Correct   Accuracy   FP   FN   Model calls*")
+    print(f"scored {scored_pairs} pairs in {perf_counter() - start:.1f}s on cpu")
+    print("cutoff   min overlap   correct   accuracy   fp   fn   model calls*")
     export_rows = []
     best_result = (-1, 0)
     for minimum_overlap in overlap_cutoffs:
@@ -106,7 +106,7 @@ def main():
                 export_rows = rows
             if cutoff is None and minimum_overlap == 0:
                 export_rows = rows
-    print("*Calls count eligible sentences up to the first supporting prediction.")
+    print("*model calls count sentences checked up to the first one that supports the claim")
 
     filename = "entailment_refined_predictions.jsonl" if args.refine else "entailment_baseline_predictions.jsonl"
     output = project / "outputs" / filename
@@ -114,7 +114,7 @@ def main():
     with output.open("w", encoding="utf-8") as file:
         for row in export_rows:
             file.write(json.dumps(row, ensure_ascii=False) + "\n")
-    print(f"Wrote predictions with minimum overlap {export_rows[0]['minimum_overlap']:.2f} to {output}")
+    print(f"saved predictions with a minimum overlap of {export_rows[0]['minimum_overlap']:.2f} to {output}")
 
 
 if __name__ == "__main__":

@@ -34,14 +34,14 @@ class EntailmentModel(object):
 
     def check_entailment(self, premise: str, hypothesis: str) -> tuple[str, float]:
         with torch.no_grad():
-            # Tokenize the premise and hypothesis
+            # tokenize the premise and hypothesis
             inputs = self.tokenizer(
                 premise, hypothesis, return_tensors='pt', truncation=True,
                 max_length=self.model.config.max_position_embeddings, padding=True,
             )
             if self.cuda:
                 inputs = {key: value.to('cuda') for key, value in inputs.items()}
-            # Get the model's prediction
+            # get the model's prediction
             outputs = self.model(**inputs)
             logits = outputs.logits
 
@@ -50,7 +50,7 @@ class EntailmentModel(object):
         entailment_id = self.model.config.label2id["entailment"]
         entailment_probability = logits.softmax(dim=-1)[0, entailment_id].item()
 
-        # Release the tensors and return only the label and a Python number.
+        # release the tensors and return only the label and a python number.
         del inputs, outputs, logits
 
         return label, entailment_probability
@@ -159,14 +159,20 @@ class EntailmentFactChecker(FactChecker):
         self.nlp = spacy.blank("en")
         self.nlp.add_pipe("sentencizer")
 
-    def evidence_sentences(self, passages: List[dict]):
+    def evidence_sentences(self, passages: List[dict], paired=False):
         for passage in passages:
-            # Keep the boundaries between marked sections of the passage.
+            previous = None
+            # keep the boundaries between marked sections of the passage.
             for section in passage["text"].replace("<s>", "").split("</s>"):
                 for sentence in self.nlp(section).sents:
                     premise = sentence.text.strip()
-                    if premise:
+                    if not premise:
+                        continue
+                    if paired and previous is not None:
+                        yield previous + " " + premise
+                    if not paired:
                         yield premise
+                    previous = premise
 
     def score_evidence(self, fact: str, candidates):
         for premise in candidates:
@@ -176,9 +182,12 @@ class EntailmentFactChecker(FactChecker):
                 yield premise, label, probability
 
     def predict(self, fact: str, passages: List[dict]) -> str:
-        for _, label, _ in self.score_evidence(fact, self.evidence_sentences(passages)):
-            if label == "entailment":
-                return "S"
+        # try individual sentences first, then try pairs for more context.
+        for paired in (False, True):
+            candidates = self.evidence_sentences(passages, paired=paired)
+            for _, label, _ in self.score_evidence(fact, candidates):
+                if label == "entailment":
+                    return "S"
         return "NS"
 
 
