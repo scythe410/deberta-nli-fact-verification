@@ -33,7 +33,7 @@ class EntailmentModel(object):
         self.tokenizer = tokenizer
         self.cuda = cuda
 
-    def check_entailment(self, premise: str, hypothesis: str):
+    def check_entailment(self, premise: str, hypothesis: str) -> str:
         with torch.no_grad():
             # Tokenize the premise and hypothesis
             inputs = self.tokenizer(premise, hypothesis, return_tensors='pt', truncation=True, padding=True)
@@ -43,17 +43,15 @@ class EntailmentModel(object):
             outputs = self.model(**inputs)
             logits = outputs.logits
 
-        # Note that the labels are ["entailment", "neutral", "contradiction"]. There are a number of ways to map
-        # these logits or probabilities to classification decisions; you'll have to decide how you want to do this.
-
-        raise Exception("Not implemented")
+        label_id = logits.argmax(dim=-1).item()
+        label = self.model.config.id2label[label_id]
 
         # To prevent out-of-memory (OOM) issues during autograding, we explicitly delete
         # objects inputs, outputs, logits, and any results that are no longer needed after the computation.
         del inputs, outputs, logits
         gc.collect()
 
-        # return something
+        return label
 
 
 class FactChecker(object):
@@ -153,9 +151,18 @@ class WordRecallThresholdFactChecker(FactChecker):
 class EntailmentFactChecker(FactChecker):
     def __init__(self, ent_model):
         self.ent_model = ent_model
+        self.nlp = spacy.blank("en")
+        self.nlp.add_pipe("sentencizer")
 
     def predict(self, fact: str, passages: List[dict]) -> str:
-        raise Exception("Implement me")
+        for passage in passages:
+            # Keep the boundaries between marked sections of the passage.
+            for section in passage["text"].replace("<s>", "").split("</s>"):
+                for sentence in self.nlp(section).sents:
+                    premise = sentence.text.strip()
+                    if premise and self.ent_model.check_entailment(premise, fact) == "entailment":
+                        return "S"
+        return "NS"
 
 
 # OPTIONAL
