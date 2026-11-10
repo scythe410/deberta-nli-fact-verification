@@ -1,0 +1,37 @@
+{
+  "code_commit": "594d0a7b0c06e2c45166acf4ae06d303724e2639",
+  "model_revision": "6f5cf0a2b59cabb106aca4c287eed12e357e90eb",
+  "minimum_overlap": 0.15,
+  "stemming": true,
+  "seed": 3604,
+  "row_numbering": "zero-based",
+  "stemming_off": {
+    "correct": 184,
+    "fp": 14,
+    "fn": 23
+  },
+  "final": {
+    "correct": 185,
+    "fp": 15,
+    "fn": 21
+  },
+  "category_counts": {
+    "A": {
+      "FP": 5,
+      "FN": 0
+    },
+    "B": {
+      "FP": 3,
+      "FN": 3
+    },
+    "C": {
+      "FP": 2,
+      "FN": 4
+    },
+    "D": {
+      "FP": 0,
+      "FN": 3
+    }
+  },
+  "prediction_sha256": "aabc539b040e31a66d7e517bf6ce019402af544493a9a7b396651ef9df8e8dda"
+}
