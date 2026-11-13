@@ -23,8 +23,8 @@ methods = [
     ("Jaccard", True, True),
 ]
 
-print("METHOD COMPARISONS")
-print("Each method tries thresholds from 0.01 to 1.00.\n")
+print("word overlap comparisons")
+print("each method tries cutoffs from 0.01 to 1.00.\n")
 
 for method, remove_common_words, combine_passages in methods:
     checker = WordRecallThresholdFactChecker(use_stemming=False)
@@ -93,11 +93,11 @@ for method, remove_common_words, combine_passages in methods:
 
     accuracy = best_correct / len(examples)
 
-    print(method)
-    print(f"  Remove common words: {remove_common_words}")
-    print(f"  Combine passages: {combine_passages}")
-    print(f"  Threshold: {best_threshold:.2f}")
-    print(f"  Correct: {best_correct}/{len(examples)} ({accuracy:.2%})")
+    print(method.lower())
+    print(f"  remove common words: {'yes' if remove_common_words else 'no'}")
+    print(f"  combine passages: {'yes' if combine_passages else 'no'}")
+    print(f"  cutoff: {best_threshold:.2f}")
+    print(f"  correct: {best_correct}/{len(examples)} ({accuracy:.2%})")
     print()
 
 

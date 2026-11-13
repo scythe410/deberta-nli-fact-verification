@@ -4,7 +4,6 @@ import torch
 from typing import List
 import numpy as np
 import spacy
-import gc
 import re
 from nltk.stem import PorterStemmer
 
@@ -34,27 +33,28 @@ class EntailmentModel(object):
         self.tokenizer = tokenizer
         self.cuda = cuda
 
-    def check_entailment(self, premise: str, hypothesis: str):
+    def check_entailment(self, premise: str, hypothesis: str) -> tuple[str, float]:
         with torch.no_grad():
-            # Tokenize the premise and hypothesis
-            inputs = self.tokenizer(premise, hypothesis, return_tensors='pt', truncation=True, padding=True)
+            # tokenize the premise and hypothesis
+            inputs = self.tokenizer(
+                premise, hypothesis, return_tensors='pt', truncation=True,
+                max_length=self.model.config.max_position_embeddings, padding=True,
+            )
             if self.cuda:
                 inputs = {key: value.to('cuda') for key, value in inputs.items()}
-            # Get the model's prediction
+            # get the model's prediction
             outputs = self.model(**inputs)
             logits = outputs.logits
 
-        # Note that the labels are ["entailment", "neutral", "contradiction"]. There are a number of ways to map
-        # these logits or probabilities to classification decisions; you'll have to decide how you want to do this.
+        label_id = logits.argmax(dim=-1).item()
+        label = self.model.config.id2label[label_id]
+        entailment_id = self.model.config.label2id["entailment"]
+        entailment_probability = logits.softmax(dim=-1)[0, entailment_id].item()
 
-        raise Exception("Not implemented")
-
-        # To prevent out-of-memory (OOM) issues during autograding, we explicitly delete
-        # objects inputs, outputs, logits, and any results that are no longer needed after the computation.
+        # release the tensors and return only the label and a python number.
         del inputs, outputs, logits
-        gc.collect()
 
-        # return something
+        return label, entailment_probability
 
 
 class FactChecker(object):
@@ -156,11 +156,44 @@ class WordRecallThresholdFactChecker(FactChecker):
 
 
 class EntailmentFactChecker(FactChecker):
+    minimum_overlap = 0.15
+
     def __init__(self, ent_model):
         self.ent_model = ent_model
+        self.overlap_checker = WordRecallThresholdFactChecker(use_stemming=False)
+        self.nlp = spacy.blank("en")
+        self.nlp.add_pipe("sentencizer")
+
+    def evidence_sentences(self, passages: List[dict], paired=False):
+        for passage in passages:
+            previous = None
+            # keep the boundaries between marked sections of the passage.
+            for section in passage["text"].replace("<s>", "").split("</s>"):
+                for sentence in self.nlp(section).sents:
+                    premise = sentence.text.strip()
+                    if not premise:
+                        continue
+                    if paired and previous is not None:
+                        yield previous + " " + premise
+                    if not paired:
+                        yield premise
+                    previous = premise
+
+    def score_evidence(self, fact: str, candidates):
+        for premise in candidates:
+            overlap = self.overlap_checker.get_overlap_score(fact, [{"text": premise}])
+            if overlap >= self.minimum_overlap:
+                label, probability = self.ent_model.check_entailment(premise, fact)
+                yield premise, label, probability
 
     def predict(self, fact: str, passages: List[dict]) -> str:
-        raise Exception("Implement me")
+        # try individual sentences first, then try pairs for more context.
+        for paired in (False, True):
+            candidates = self.evidence_sentences(passages, paired=paired)
+            for _, label, _ in self.score_evidence(fact, candidates):
+                if label == "entailment":
+                    return "S"
+        return "NS"
 
 
 # OPTIONAL

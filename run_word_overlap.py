@@ -29,15 +29,15 @@ def print_class_scores(class_name, correct_count, predicted_count, actual_count)
         f1 = 2 * precision * recall / (precision + recall)
 
     print(f"\n{class_name}")
-    print(f"  Precision : {precision:.2%}")
-    print(f"  Recall    : {recall:.2%}")
-    print(f"  F1        : {f1:.2%}")
+    print(f"  precision: {precision:.2%}")
+    print(f"  recall: {recall:.2%}")
+    print(f"  f1: {f1:.2%}")
 
 
 def main():
-    print("\nWORD OVERLAP RESULTS")
+    print("\nword overlap results")
     print("=" * 45)
-    print("Loading facts and evidence...", flush=True)
+    print("loading claims and evidence...", flush=True)
 
     # Load the evidence and match it to the facts.
     passages_path = project_folder / "data/passages_bm25_ChatGPT_humfacts.jsonl"
@@ -81,18 +81,18 @@ def main():
     errors = wrongly_supported + missed_supported
     accuracy = correct / total
 
-    print(f"\nFacts checked : {total}")
-    print(f"Threshold     : {checker.threshold:.2f}")
-    print(f"Accuracy      : {accuracy:.2%}")
-    print(f"Correct       : {correct}")
-    print(f"Errors        : {errors}")
+    print(f"\nclaims checked: {total}")
+    print(f"overlap cutoff: {checker.threshold:.2f}")
+    print(f"accuracy: {accuracy:.2%}")
+    print(f"correct: {correct}")
+    print(f"errors: {errors}")
 
     # Count the predicted and actual supported answers.
     predicted_supported = correct_supported + wrongly_supported
     actual_supported = correct_supported + missed_supported
 
     print_class_scores(
-        "SUPPORTED FACTS", correct_supported, predicted_supported, actual_supported
+        "supported claims", correct_supported, predicted_supported, actual_supported
     )
 
     # Do the same for not-supported answers.
@@ -100,15 +100,15 @@ def main():
     actual_not_supported = correct_not_supported + wrongly_supported
 
     print_class_scores(
-        "NOT-SUPPORTED FACTS", correct_not_supported,
+        "unsupported claims", correct_not_supported,
         predicted_not_supported, actual_not_supported
     )
 
-    print("\nPREDICTION BREAKDOWN")
-    print(f"  Correctly marked supported     : {correct_supported}")
-    print(f"  Correctly marked not supported : {correct_not_supported}")
-    print(f"  Wrongly marked supported       : {wrongly_supported}")
-    print(f"  Missed supported facts         : {missed_supported}")
+    print("\nprediction breakdown")
+    print(f"  correctly marked supported: {correct_supported}")
+    print(f"  correctly marked unsupported: {correct_not_supported}")
+    print(f"  wrongly marked supported: {wrongly_supported}")
+    print(f"  missed supported claims: {missed_supported}")
     print("=" * 45)
 
 
