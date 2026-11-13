@@ -1,0 +1,21 @@
+row,error_type,fact,original_label,gold_label,prediction,category,note
+2,FP,Marianne McAndrew is a singer.,NS,NS,S,A,The passage calls McAndrew an actress and says she did not do her own singing in the film. A singing character is insufficient evidence that the actress is a singer.
+5,FP,Cleveland is in Ohio.,IR,NS,S,C,"The original label is IR, which the driver scores as NS. The driver also gives this Marianne McAndrew claim Mike Trivisonno's passages because it matches claims by text alone."
+34,FP,Tusa has been involved in various cultural initiatives.,NS,NS,S,B,"The evidence lists excavations, a magazine and teaching. These can suggest cultural work, but the broad phrase 'various cultural initiatives' leaves room for different judgements."
+51,FP,Itakura has represented Japan at the Under-19-level.,NS,NS,S,A,The evidence says Japan U-20. The claim says Under-19. It matches the person and activity but changes the age group.
+105,FP,She has worked with a number of organizations.,NS,NS,S,B,"The evidence mentions a borough, schools and sessions for doctors and police. Whether this means working with 'a number of organizations' depends on how broadly 'worked with' is read."
+122,FP,He has worked as a researcher at various organizations.,NS,NS,S,B,"Oliphant carried out research at Brigham Young University. The passage also names organisations he led or founded, but it only identifies research at one of them."
+125,FP,He has worked at Mayo Clinic.,NS,NS,S,A,"Oliphant earned a PhD from the Mayo Clinic. A degree establishes where he studied, while the claim says he worked there."
+133,FP,He served as a sniper.,NS,NS,S,C,"The passage directly calls Furlong a former military sniper, while the supplied label is NS. This is a clear disagreement between the label and the text provided."
+168,FP,Kerser is a songwriter.,NS,NS,S,A,"The passages describe Kerser rapping, recording and releasing tracks. They do not say who wrote the songs."
+192,FP,Jidenna's music is a fusion of hip-hop.,NS,NS,S,A,The passages describe Jidenna as a rapper and list influences. These are related to hip-hop but do not clearly establish the exact 'fusion' claim.
+9,FN,"Gerhard Fischer invented the first handheld, battery-operated metal detector.",S,S,NS,C,"The evidence says Fischer contributed to metal detectors and that the inventor is disputed. It does not establish every part of the claim, including 'battery-operated', although the label is S."
+77,FN,The Taker trilogy is a novel by Katsu.,S,S,NS,C,"The text names a Taker trilogy and lists three novels. Calling the whole trilogy 'a novel' is unclear, although the supplied label is S. The text also discusses the trilogy outside the bibliography."
+78,FN,The Hunger is a novel by Katsu.,S,S,NS,D,"The Hunger appears under 'Standalone novels' in Katsu's bibliography. The book entry lacks the author name, so the link depends on wider page context."
+79,FN,The Deep is a novel by Katsu.,S,S,NS,D,"The Deep appears in the standalone novels list on Katsu’s page. The awards passage also identifies it as a novel, but neither entry names its author."
+141,FN,"She was born on July 18, 1987.",S,S,NS,C,The claim gives 18 July 1987. The passage gives 14 August 1987. The supplied S label conflicts with that date.
+144,FN,"With CSKA, he won domestic titles.",S,S,NS,D,CSKA's Russian league and cup wins appear in a compact honours list. Understanding 'domestic titles' requires linking the claim to the competitions in that list.
+189,FN,They divorced in 1964.,S,S,NS,C,"The passage dates the first marriage to 1957 and a later marriage to 1971. The date range ending in 1964 describes an ambassadorial post. The retrieved text gives no divorce date, although the label is S."
+209,FN,He has since then starred in numerous films.,S,S,NS,B,"Several films are mentioned in different places. The word 'numerous' has no fixed count, and support would need to be drawn from those separate mentions."
+216,FN,"-""Protect the Boss."" is popular.",S,S,NS,B,Protect the Boss appears among roles Ji Sung is best known for. This does not directly say how popular the programme itself was.
+220,FN,"""Familiar Wife."" is popular.",S,S,NS,B,Familiar Wife appears in a list of well-known roles and in a sentence about Ji Sung starring in it. Neither directly describes the programme's popularity.
