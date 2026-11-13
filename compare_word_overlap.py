@@ -10,7 +10,7 @@ passages = read_passages("data/passages_bm25_ChatGPT_humfacts.jsonl")
 examples = read_fact_examples("data/dev_labeled_ChatGPT.jsonl", passages)
 
 
-# 2. List the eight methods to compare.
+# 2. Compare scoring, common-word removal and passage handling.
 # Each row means: score type, remove common words, combine passages.
 methods = [
     ("Recall", False, False),
@@ -27,7 +27,7 @@ print("word overlap comparisons")
 print("each method tries cutoffs from 0.01 to 1.00.\n")
 
 for method, remove_common_words, combine_passages in methods:
-    checker = WordRecallThresholdFactChecker()
+    checker = WordRecallThresholdFactChecker(use_stemming=False)
 
     if not remove_common_words:
         checker.stop_words = set()
@@ -101,24 +101,34 @@ for method, remove_common_words, combine_passages in methods:
     print()
 
 
-# 5. Show how the current checker performs at a few cutoffs.
-print("results at different cutoffs")
-checker = WordRecallThresholdFactChecker()
+# 5. Compare stemming with the original method at every cutoff.
+print("STEMMING AND THRESHOLD COMPARISON")
+print("Common words removed; recall over combined passages.")
 
-for threshold in [0.50, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 1.00]:
-    checker.threshold = threshold
-    correct = 0
+for use_stemming in [False, True]:
+    checker = WordRecallThresholdFactChecker(use_stemming=use_stemming)
+    scores = [checker.get_overlap_score(e.fact, e.passages) for e in examples]
+    best_correct = -1
+    best_threshold = 0
+    print(f"\nStemming: {use_stemming}")
+    print("Cutoff  Correct  False positives  False negatives  Accuracy")
 
-    for example in examples:
-        actual_label = example.label
-
-        if actual_label == "IR":
-            actual_label = "NS"
-
-        prediction = checker.predict(example.fact, example.passages)
-
-        if prediction == actual_label:
-            correct += 1
-
-    accuracy = correct / len(examples)
-    print(f"{threshold:.2f}: {correct}/{len(examples)} ({accuracy:.2%})")
+    for step in range(1, 101):
+        threshold = step / 100
+        false_positives = 0
+        false_negatives = 0
+        for score, example in zip(scores, examples):
+            if score >= threshold and example.label != "S":
+                false_positives += 1
+            if score < threshold and example.label == "S":
+                false_negatives += 1
+        correct = len(examples) - false_positives - false_negatives
+        if correct >= best_correct:
+            best_correct = correct
+            best_threshold = threshold
+        if step in [50, 60, 65, 70, 75, 80, 85, 90, 100]:
+            print(
+                f"{threshold:.2f}    {correct:3d}      {false_positives:3d}"
+                f"              {false_negatives:3d}           {correct / len(examples):.2%}"
+            )
+    print(f"Best tested cutoff: {best_threshold:.2f}; correct: {best_correct}/{len(examples)}")

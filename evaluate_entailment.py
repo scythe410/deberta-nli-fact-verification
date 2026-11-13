@@ -91,7 +91,7 @@ def main():
         export_final_predictions(checker, examples, project / "outputs/entailment_final_predictions.jsonl")
         return
 
-    overlap_checker = WordRecallThresholdFactChecker()
+    overlap_checker = WordRecallThresholdFactChecker(use_stemming=False)
 
     # Score each sentence once so every comparison uses the same model outputs.
     start = perf_counter()
